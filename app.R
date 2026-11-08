@@ -259,7 +259,7 @@ ui <- fluidPage(
     $(document).ready(function() {
       setTimeout(function() {
         ['dist_mode','score_mode'].forEach(function(id) {
-          $('#' + id + ' .radio-inline').first().addClass('active-pill');
+          $('#' + id + ' .radio-inline').each(function() {\r\n            var inp = $(this).find('input[type=radio]');\r\n            if (inp.is(':checked')) $(this).addClass('active-pill');\r\n            else $(this).removeClass('active-pill');\r\n          });
         });
       }, 100);
     });
@@ -279,7 +279,7 @@ ui <- fluidPage(
       div(class = "mode-group",
           tags$span(class = "mode-group-label", "Distance mode:"),
           radioButtons("dist_mode", label = NULL, inline = TRUE,
-                       choices  = c("Whitened" = "whitened", "Raw (standardised)" = "raw"),
+                       choices  = c("Euclidean" = "raw", "Whitened" = "whitened"),
                        selected = "whitened")
       ),
       
@@ -642,7 +642,7 @@ server <- function(input, output, session) {
       geom_point(color = "#3fb950", size = 3.5) +
       labs(x = if (input$score_mode == "scaled")
         "Percentile similarity score (0\u2013100)" else
-          paste0("Distance (", input$dist_mode, ")"),
+          paste0("Distance (", ifelse(input$dist_mode == "raw", "Euclidean", "Whitened"), ")"),
         y = NULL) +
       theme_minimal(base_family = "sans") +
       theme(
@@ -697,7 +697,7 @@ server <- function(input, output, session) {
               div(class = "score-label",
                   if (input$score_mode == "scaled")
                     "Percentile similarity score (100 = most similar)"
-                  else paste0("Euclidean distance (", input$dist_mode, ")")),
+                  else paste0(ifelse(input$dist_mode == "raw", "Euclidean", "Whitened"), " distance")),
               tags$span(class = paste("similarity-band", band$cls), band$label)
           ),
           tags$hr(style = "border-color:#21262d;margin:20px 0;"),
@@ -754,7 +754,7 @@ server <- function(input, output, session) {
     mu  <- mean(plot_v); med <- median(plot_v)
     x_lab <- if (input$score_mode == "scaled")
       "Percentile similarity score (0\u2013100)" else
-        paste0("Distance (", input$dist_mode, ")")
+        paste0("Distance (", ifelse(input$dist_mode == "raw", "Euclidean", "Whitened"), ")")
     
     ggplot(data.frame(x = plot_v), aes(x = x)) +
       geom_histogram(bins = 80, fill = "#238636", color = NA, alpha = 0.8) +
@@ -916,7 +916,7 @@ server <- function(input, output, session) {
     pt_df  <- data.frame(x = jd$years[-1], y = disp, gap = jd$year_gaps > 1)
     y_lab  <- if (input$score_mode == "scaled")
       "Percentile similarity vs previous season" else
-        paste0("Distance vs previous season (", input$dist_mode, ")")
+        paste0("Distance vs previous season (", ifelse(input$dist_mode == "raw", "Euclidean", "Whitened"), ")")
     
     p <- ggplot() +
       geom_hline(yintercept = ac_disp, color = "#e6edf3",
